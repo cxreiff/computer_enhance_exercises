@@ -3,10 +3,6 @@ use std::{io, process::Command};
 use clap::Parser;
 use decoder::decode;
 
-use crate::utils::PrintVec;
-
-mod utils;
-
 #[derive(Parser)]
 struct Args {
     asm: String,
@@ -24,9 +20,9 @@ fn main() -> Result<(), io::Error> {
 
     let bytes = std::fs::read(output).unwrap();
 
-    let instructions = decode(bytes);
+    let _instructions = decode(bytes);
 
-    print!("{}", PrintVec(instructions));
+    // println!("{}", PrintVec(instructions));
 
     Command::new("rm").arg(output).output()?;
 
