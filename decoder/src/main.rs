@@ -1,7 +1,7 @@
 use std::{io, process::Command};
 
 use clap::Parser;
-use decoder::decode;
+use decoder::{decode, utils::PrintVec};
 
 #[derive(Parser)]
 struct Args {
@@ -20,9 +20,12 @@ fn main() -> Result<(), io::Error> {
 
     let bytes = std::fs::read(output).unwrap();
 
-    let _instructions = decode(bytes);
+    let instructions = decode(bytes);
 
-    // println!("{}", PrintVec(instructions));
+    #[cfg(debug_assertions)]
+    println!();
+
+    println!("{}", PrintVec(instructions));
 
     Command::new("rm").arg(output).output()?;
 
