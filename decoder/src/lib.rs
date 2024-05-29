@@ -21,97 +21,160 @@ pub fn decode(bytes: Vec<u8>) -> Vec<Instruction> {
     };
 
     while let Some(instruction_byte) = next_byte() {
-        result.push(match blice(instruction_byte, 0, 4) {
-            0b0000 | 0b0010 | 0b0011 => match blice(instruction_byte, 5, 1) {
-                0b0 => {
-                    let d = blice(instruction_byte, 6, 1);
-                    let w = blice(instruction_byte, 7, 1);
+        result.push(match instruction_byte {
+            0b01110100 => Instruction::Je {
+                increment: decode_data(&mut next_byte, &0, &0),
+            },
+            0b01111100 => Instruction::Jl {
+                increment: decode_data(&mut next_byte, &0, &0),
+            },
+            0b01111110 => Instruction::Jle {
+                increment: decode_data(&mut next_byte, &0, &0),
+            },
+            0b01110010 => Instruction::Jb {
+                increment: decode_data(&mut next_byte, &0, &0),
+            },
+            0b01110110 => Instruction::Jbe {
+                increment: decode_data(&mut next_byte, &0, &0),
+            },
+            0b01111010 => Instruction::Jp {
+                increment: decode_data(&mut next_byte, &0, &0),
+            },
+            0b01110000 => Instruction::Jo {
+                increment: decode_data(&mut next_byte, &0, &0),
+            },
+            0b01111000 => Instruction::Js {
+                increment: decode_data(&mut next_byte, &0, &0),
+            },
+            0b01110101 => Instruction::Jne {
+                increment: decode_data(&mut next_byte, &0, &0),
+            },
+            0b01111101 => Instruction::Jnl {
+                increment: decode_data(&mut next_byte, &0, &0),
+            },
+            0b01111111 => Instruction::Jnle {
+                increment: decode_data(&mut next_byte, &0, &0),
+            },
+            0b01110011 => Instruction::Jnb {
+                increment: decode_data(&mut next_byte, &0, &0),
+            },
+            0b01110111 => Instruction::Jnbe {
+                increment: decode_data(&mut next_byte, &0, &0),
+            },
+            0b01111011 => Instruction::Jnp {
+                increment: decode_data(&mut next_byte, &0, &0),
+            },
+            0b01110001 => Instruction::Jno {
+                increment: decode_data(&mut next_byte, &0, &0),
+            },
+            0b01111001 => Instruction::Jns {
+                increment: decode_data(&mut next_byte, &0, &0),
+            },
+            0b11100010 => Instruction::Loop {
+                increment: decode_data(&mut next_byte, &0, &0),
+            },
+            0b11100001 => Instruction::Loopz {
+                increment: decode_data(&mut next_byte, &0, &0),
+            },
+            0b11100000 => Instruction::Loopnz {
+                increment: decode_data(&mut next_byte, &0, &0),
+            },
+            0b11100011 => Instruction::Jcxz {
+                increment: decode_data(&mut next_byte, &0, &0),
+            },
 
-                    let (src, dest) = decode_mod_reg_rm(&mut next_byte, &d, &w);
-
-                    match blice(instruction_byte, 2, 3) {
-                        0b000 => Instruction::Add { src, dest },
-                        0b101 => Instruction::Sub { src, dest },
-                        0b111 => Instruction::Cmp { src, dest },
-                        _ => Instruction::Noop,
-                    }
-                }
-                0b1 => match blice(instruction_byte, 6, 1) {
+            _ => match blice(instruction_byte, 0, 4) {
+                0b0000 | 0b0010 | 0b0011 => match blice(instruction_byte, 5, 1) {
                     0b0 => {
+                        let d = blice(instruction_byte, 6, 1);
                         let w = blice(instruction_byte, 7, 1);
 
-                        let (data, dest) = decode_accum_immediate(&mut next_byte, &w);
+                        let (src, dest) = decode_mod_reg_rm(&mut next_byte, &d, &w);
 
                         match blice(instruction_byte, 2, 3) {
+                            0b000 => Instruction::Add { src, dest },
+                            0b101 => Instruction::Sub { src, dest },
+                            0b111 => Instruction::Cmp { src, dest },
+                            _ => Instruction::Noop,
+                        }
+                    }
+                    0b1 => match blice(instruction_byte, 6, 1) {
+                        0b0 => {
+                            let w = blice(instruction_byte, 7, 1);
+
+                            let (data, dest) = decode_accum_immediate(&mut next_byte, &w);
+
+                            match blice(instruction_byte, 2, 3) {
+                                0b000 => Instruction::AddImmediate { data, dest },
+                                0b101 => Instruction::SubImmediate { data, dest },
+                                0b111 => Instruction::CmpImmediate { data, dest },
+                                _ => Instruction::Noop,
+                            }
+                        }
+                        _ => Instruction::Noop,
+                    },
+                    _ => Instruction::Noop,
+                },
+                0b1000 => match blice(instruction_byte, 4, 2) {
+                    0b00 => {
+                        let s = blice(instruction_byte, 6, 1);
+                        let w = blice(instruction_byte, 7, 1);
+
+                        let (data, dest, ident) = decode_mod_rm(&mut next_byte, &s, &w);
+
+                        match ident {
                             0b000 => Instruction::AddImmediate { data, dest },
                             0b101 => Instruction::SubImmediate { data, dest },
                             0b111 => Instruction::CmpImmediate { data, dest },
-                            _ => Instruction::Noop,
+                            _ => panic!(),
                         }
+                    }
+                    0b10 => {
+                        let d = blice(instruction_byte, 6, 1);
+                        let w = blice(instruction_byte, 7, 1);
+
+                        let (src, dest) = decode_mod_reg_rm(&mut next_byte, &d, &w);
+
+                        Instruction::Mov { src, dest }
+                    }
+                    _ => Instruction::Noop,
+                },
+                0b1010 => {
+                    let ident = blice(instruction_byte, 4, 3);
+                    let w = blice(instruction_byte, 7, 1);
+
+                    let (src, dest) = decode_accum_mem(&mut next_byte, &ident, &w);
+
+                    Instruction::Mov { src, dest }
+                }
+                0b1011 => {
+                    let w = blice(instruction_byte, 4, 1);
+                    let reg_bits = blice(instruction_byte, 5, 3);
+
+                    let reg = decode_register_reg(&reg_bits, &w);
+                    let dest = Location {
+                        register: reg,
+                        is_mem_addr: false,
+                        addr_calc: None,
+                        displacement: None,
+                    };
+
+                    let data = decode_data(&mut next_byte, &0, &w);
+
+                    Instruction::MovImmediate { data, dest }
+                }
+                0b1100 => match blice(instruction_byte, 4, 3) {
+                    0b011 => {
+                        let w = blice(instruction_byte, 7, 1);
+
+                        let (data, dest, _) = decode_mod_rm(&mut next_byte, &0, &w);
+
+                        Instruction::MovImmediate { data, dest }
                     }
                     _ => Instruction::Noop,
                 },
                 _ => Instruction::Noop,
             },
-            0b1000 => match blice(instruction_byte, 4, 2) {
-                0b00 => {
-                    let s = blice(instruction_byte, 6, 1);
-                    let w = blice(instruction_byte, 7, 1);
-
-                    let (data, dest, ident) = decode_mod_rm(&mut next_byte, &s, &w);
-
-                    match ident {
-                        0b000 => Instruction::AddImmediate { data, dest },
-                        0b101 => Instruction::SubImmediate { data, dest },
-                        0b111 => Instruction::CmpImmediate { data, dest },
-                        _ => panic!(),
-                    }
-                }
-                0b10 => {
-                    let d = blice(instruction_byte, 6, 1);
-                    let w = blice(instruction_byte, 7, 1);
-
-                    let (src, dest) = decode_mod_reg_rm(&mut next_byte, &d, &w);
-
-                    Instruction::Mov { src, dest }
-                }
-                _ => Instruction::Noop,
-            },
-            0b1010 => {
-                let ident = blice(instruction_byte, 4, 3);
-                let w = blice(instruction_byte, 7, 1);
-
-                let (src, dest) = decode_accum_mem(&mut next_byte, &ident, &w);
-
-                Instruction::Mov { src, dest }
-            }
-            0b1011 => {
-                let w = blice(instruction_byte, 4, 1);
-                let reg_bits = blice(instruction_byte, 5, 3);
-
-                let reg = decode_register_reg(&reg_bits, &w);
-                let dest = Location {
-                    register: reg,
-                    is_mem_addr: false,
-                    addr_calc: None,
-                    displacement: None,
-                };
-
-                let data = decode_data(&mut next_byte, &0, &w);
-
-                Instruction::MovImmediate { data, dest }
-            }
-            0b1100 => match blice(instruction_byte, 4, 3) {
-                0b011 => {
-                    let w = blice(instruction_byte, 7, 1);
-
-                    let (data, dest, _) = decode_mod_rm(&mut next_byte, &0, &w);
-
-                    Instruction::MovImmediate { data, dest }
-                }
-                _ => Instruction::Noop,
-            },
-            _ => Instruction::Noop,
         });
 
         #[cfg(debug_assertions)]
@@ -180,8 +243,8 @@ fn decode_mod_reg_rm<'a>(
     let reg_bits = blice(register_byte, 2, 3);
     let r_m_bits = blice(register_byte, 5, 3);
 
-    let reg = decode_register_reg(&reg_bits, &w);
-    let (r_m, addr_calc) = decode_register_r_m(&r_m_bits, &w, &mod_bits);
+    let reg = decode_register_reg(&reg_bits, w);
+    let (r_m, addr_calc) = decode_register_r_m(&r_m_bits, w, &mod_bits);
 
     let reg = Location {
         register: reg,
@@ -214,7 +277,7 @@ fn decode_mod_rm<'a>(
     let ident = blice(register_byte, 2, 3);
     let r_m_bits = blice(register_byte, 5, 3);
 
-    let (r_m, addr_calc) = decode_register_r_m(&r_m_bits, &w, &mod_bits);
+    let (r_m, addr_calc) = decode_register_r_m(&r_m_bits, w, &mod_bits);
 
     let dest = Location {
         register: r_m,
@@ -223,7 +286,7 @@ fn decode_mod_rm<'a>(
         displacement: decode_displacement(next_byte, &mod_bits, &r_m_bits),
     };
 
-    let data = decode_data(next_byte, &s, &w);
+    let data = decode_data(next_byte, s, w);
 
     (data, dest, ident)
 }
@@ -267,7 +330,7 @@ fn decode_accum_immediate<'a>(
         addr_calc: None,
         displacement: None,
     };
-    let data = decode_data(next_byte, &0, &w);
+    let data = decode_data(next_byte, &0, w);
 
     (data, accumulator)
 }
