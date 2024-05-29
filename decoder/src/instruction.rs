@@ -6,6 +6,16 @@ use std::{
 pub enum Instruction {
     Mov { src: Location, dest: Location },
     MovImmediate { data: Immediate, dest: Location },
+
+    Add { src: Location, dest: Location },
+    AddImmediate { data: Immediate, dest: Location },
+
+    Sub { src: Location, dest: Location },
+    SubImmediate { data: Immediate, dest: Location },
+
+    Cmp { src: Location, dest: Location },
+    CmpImmediate { data: Immediate, dest: Location },
+
     Noop,
 }
 
@@ -16,27 +26,25 @@ impl Display for Instruction {
                 write!(f, "mov {}, {}", dest, src)
             }
             Instruction::MovImmediate { data, dest } => {
-                let data_string = if dest.is_mem_addr {
-                    match data {
-                        Immediate::Byte(data) => {
-                            format!("byte {}", data)
-                        }
-                        Immediate::Word(data) => {
-                            format!("word {}", data)
-                        }
-                    }
-                } else {
-                    match data {
-                        Immediate::Byte(data) => {
-                            format!("{}", data)
-                        }
-                        Immediate::Word(data) => {
-                            format!("{}", data)
-                        }
-                    }
-                };
-
-                write!(f, "mov {}, {}", dest, data_string)
+                write!(f, "mov {}, {}", dest, string_for_immediate(data, dest))
+            }
+            Instruction::Add { src, dest } => {
+                write!(f, "add {}, {}", dest, src)
+            }
+            Instruction::AddImmediate { data, dest } => {
+                write!(f, "add {}, {}", dest, string_for_immediate(data, dest))
+            }
+            Instruction::Sub { src, dest } => {
+                write!(f, "sub {}, {}", dest, src)
+            }
+            Instruction::SubImmediate { data, dest } => {
+                write!(f, "sub {}, {}", dest, string_for_immediate(data, dest))
+            }
+            Instruction::Cmp { src, dest } => {
+                write!(f, "cmp {}, {}", dest, src)
+            }
+            Instruction::CmpImmediate { data, dest } => {
+                write!(f, "cmp {}, {}", dest, string_for_immediate(data, dest))
             }
             Instruction::Noop => write!(f, "noop"),
         }
@@ -117,4 +125,26 @@ impl Display for Register {
 pub enum Immediate {
     Byte(i8),
     Word(i16),
+}
+
+fn string_for_immediate(data: &Immediate, dest: &Location) -> String {
+    if dest.is_mem_addr {
+        match data {
+            Immediate::Byte(data) => {
+                format!("byte {}", data)
+            }
+            Immediate::Word(data) => {
+                format!("word {}", data)
+            }
+        }
+    } else {
+        match data {
+            Immediate::Byte(data) => {
+                format!("{}", data)
+            }
+            Immediate::Word(data) => {
+                format!("{}", data)
+            }
+        }
+    }
 }
